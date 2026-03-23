@@ -70,9 +70,12 @@ cd content-team
 
 ### 2. Create a virtual environment
 
+> **Requires Python 3.12.** Python 3.14+ is not yet fully supported by all dependencies (e.g. `tiktoken`).
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+python3.12 -m venv .venv
+source .venv/bin/activate        # Mac/Linux
+# .venv\Scripts\activate         # Windows
 ```
 
 ### 3. Install dependencies
