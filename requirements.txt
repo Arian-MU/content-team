@@ -1,0 +1,16 @@
+crewai
+chromadb
+anthropic
+openai
+python-dotenv
+pyyaml
+requests
+beautifulsoup4
+streamlit
+pandas
+pydantic-settings
+voyageai
+pymupdf4llm
+pdfplumber
+langchain
+langchain-text-splitters
