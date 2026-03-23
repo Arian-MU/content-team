@@ -1,1 +1,27 @@
+# Content Strategy Configuration
+# Fill this in before running the app.
+# Every agent is injected with this context.
+
+target_audience: "International students entering the Australian tech job market"
+
+voice_tone: "conversational, first-person, honest, practical — like advice from a friend, not a recruiter"
+
+content_pillars:
+  - ATS and resume strategy
+  - local Australian networking
+  - visa and work rights for international students
+  - job search tactics for the Australian market
+  - tech industry entry points
+
+topics_to_avoid: []
+
+post_structure: "Hook -> Observation -> Insight -> Takeaway -> CTA -> Hashtags"
+
+hashtag_strategy: "3-5 hashtags, mix broad (#jobsearch #australia) and niche (#internationaltechstudents)"
+
+max_post_length: 250
+
+# Paste your own LinkedIn posts here as style examples.
+# The more you add, the more accurately the AI writes in your voice.
+sample_posts: []
 
