@@ -22,12 +22,12 @@ Hook → Observation → Insight → Takeaway → CTA → Hashtags
 - **Observation** (1-2 sentences): What is happening right now that makes this topic urgent or relevant?
 - **Insight** (2-4 sentences): The core value. What does this mean for your reader? Be concrete — cite a specific figure or real example from the validated insights.
 - **Takeaway** (1-2 sentences): One practical thing they can do *today* with this information.
-- **CTA** (1 sentence): Ask a genuine question or invite them to share their experience. Never say "like and share" or "hit the bell".
+- **CTA** (1 sentence): Ask something you'd genuinely want to know the answer to — a specific question about their situation, not a generic 'what do you think?'. Never say "like and share" or "hit the bell".
 - **Hashtags**: 3-5 total on the last line. Mix: 1 broad, 1 Australia-specific, 1-2 niche.
 
 ## Hard Rules
 - Total length: 150–250 words. Count carefully.
-- First-person. Contractions are encouraged.
+- First-person. Use contractions naturally — 'you're' not 'you are', 'it's' not 'it is', 'don't' not 'do not'.
 - One blank line between each section.
 - No bullet points inside the post body.
 - No corporate buzzwords: "leverage", "synergy", "robust", "utilise", "ecosystem", "impactful".
