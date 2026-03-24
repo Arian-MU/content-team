@@ -45,3 +45,7 @@ logs/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Google Drive credentials — contains OAuth secrets, never commit
+config/gdrive_credentials.json
+config/gdrive_token.json

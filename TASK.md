@@ -257,6 +257,31 @@ All in `prompts/*.txt`. Loaded from file in agents. Never written inline.
 
 ---
 
+## Future UX Improvements (Post Phase 10)
+
+### Two-Phase Generate Flow
+Currently the Generate page runs all 5 pipeline steps automatically without
+stopping. A two-phase flow would significantly improve UX and reduce wasted
+cost on bad research runs:
+
+- **Phase 1 (Research):** Run Researcher agent only → show user the research
+  report, citation list, and ingestion summary → present a
+  **"Looks good — continue →"** button and a **"Discard"** button
+- **Phase 2 (Write):** On confirmation, run Analyst → Fact-checker → Writer →
+  Optimiser and produce the final post
+
+Benefits:
+- User can validate source quality before the expensive writing steps run
+- If research is poor, user discards early and saves ~$0.28 per run
+- Gives user agency over what goes into the final post
+
+Implementation: store `gen_research` in `st.session_state` after Phase 1,
+render a confirmation button, then run the remaining agents only when confirmed.
+No pipeline/crew.py changes needed — split the existing Generate page logic
+into two button-triggered blocks.
+
+---
+
 ## Copilot Rules — Enforced Every Session
 
 - Read COPILOT_CONTEXT.md before starting
