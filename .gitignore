@@ -22,6 +22,8 @@ ENV/
 # Data — local databases and vector store (large, user-specific)
 data/chromadb/
 data/content_agent.db
+data/content_agent.db-shm
+data/content_agent.db-wal
 data/urls_to_ingest.txt
 
 # Logs
