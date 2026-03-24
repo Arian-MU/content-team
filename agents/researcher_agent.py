@@ -13,6 +13,24 @@ from rag import fetcher, ingestor
 _PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "researcher.txt"
 _STATUS_TYPES = ["success", "paywalled", "dead", "blocked", "timeout", "failed"]
 
+# Audience context injected at the top of every research prompt.
+# Keeps the prompt template tight while grounding Perplexity in the target audience.
+_AUDIENCE_HINT = (
+    "Context: You are researching for content aimed at early-career tech professionals "
+    "and international students entering the Australian job market. "
+    "Prioritise sources and statistics relevant to Australia.\n\n"
+)
+
+# Perplexity sonar-deep-research pricing (USD per token)
+_COST_PER_INPUT_TOKEN  = 5.0  / 1_000_000   # $5  / 1M input tokens
+_COST_PER_OUTPUT_TOKEN = 15.0 / 1_000_000   # $15 / 1M output tokens
+
+
+def _estimate_cost(tokens_in: int | None, tokens_out: int | None) -> float | None:
+    if tokens_in is None or tokens_out is None:
+        return None
+    return round(tokens_in * _COST_PER_INPUT_TOKEN + tokens_out * _COST_PER_OUTPUT_TOKEN, 6)
+
 
 def run(topic: str, run_id: str) -> dict:
     """Run deep research on a topic via Perplexity sonar-deep-research.
@@ -26,7 +44,7 @@ def run(topic: str, run_id: str) -> dict:
     Raises RuntimeError if both API attempts fail.
     """
     template = _PROMPT_PATH.read_text()
-    prompt = template.replace("{topic}", topic)
+    prompt = _AUDIENCE_HINT + template.replace("{topic}", topic)
 
     model = get_model("researcher")
     client = OpenAI(
@@ -54,7 +72,8 @@ def run(topic: str, run_id: str) -> dict:
                 ) from last_exc
             time.sleep(2)
 
-    raw_report = response.choices[0].message.content  # type: ignore[union-attr]
+    assert response is not None  # loop raises on 2nd attempt — this is always set
+    raw_report = response.choices[0].message.content
     citations: list[str] = list(getattr(response, "citations", []) or [])
 
     # ── Fetch + ingest every citation ──────────────────────────────────────────
@@ -79,7 +98,13 @@ def run(topic: str, run_id: str) -> dict:
             summary[status].append({"url": url, "reason": fetch_result["reason"]})
 
     ingested_count = len(summary["success"])
-    failed_count = sum(len(v) for k, v in summary.items() if k != "success")
+    skipped_count  = len(summary["paywalled"])
+    failed_count   = sum(len(v) for k, v in summary.items() if k not in ("success", "paywalled"))
+
+    cost_usd = _estimate_cost(
+        getattr(response.usage, "prompt_tokens", None),
+        getattr(response.usage, "completion_tokens", None),
+    )
 
     save_research_output(
         run_id=run_id,
@@ -87,7 +112,9 @@ def run(topic: str, run_id: str) -> dict:
         raw_report=raw_report,
         citations=citations,
         ingested=ingested_count,
+        skipped=skipped_count,
         failed=failed_count,
+        cost_usd=cost_usd,
     )
 
     save_run_log(
@@ -96,8 +123,9 @@ def run(topic: str, run_id: str) -> dict:
         input=topic,
         output=raw_report[:2000],
         model=model,
-        tokens_in=getattr(response.usage, "prompt_tokens", None),  # type: ignore[union-attr]
-        tokens_out=getattr(response.usage, "completion_tokens", None),  # type: ignore[union-attr]
+        tokens_in=getattr(response.usage, "prompt_tokens", None),
+        tokens_out=getattr(response.usage, "completion_tokens", None),
+        cost_usd=cost_usd,
         duration_ms=duration_ms,
     )
 
