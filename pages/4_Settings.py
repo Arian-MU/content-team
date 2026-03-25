@@ -203,10 +203,54 @@ with tab_keys:
         st.caption("No results yet — press 'Check all keys' above.")
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 3 — Presets  (save/load named strategy configs — coming next)
+# TAB 3 — Presets
 # ══════════════════════════════════════════════════════════════════════════════
+
+PRESETS_DIR = Path("config/presets")
+PRESETS_DIR.mkdir(parents=True, exist_ok=True)
 
 with tab_presets:
     st.subheader("Strategy Presets")
-    st.info("Save & load named strategy presets — coming next.")
+    st.caption("Save the current strategy under a name, then load it back any time.")
+
+    # ── Save current strategy as a preset ────────────────────────────────────
+    st.markdown("**Save current strategy as a preset**")
+    col_name, col_save = st.columns([4, 1])
+    preset_name = col_name.text_input("Preset name", placeholder="e.g. Casual voice, B2B focus", label_visibility="collapsed")
+    if col_save.button("Save", type="primary"):
+        if not preset_name.strip():
+            st.error("Enter a name for the preset.")
+        else:
+            current = _load_strategy()
+            if not current:
+                st.error("No strategy saved yet. Fill in the Strategy tab first.")
+            else:
+                safe = preset_name.strip().replace(" ", "_").replace("/", "-")
+                preset_path = PRESETS_DIR / f"{safe}.yaml"
+                preset_path.write_text(yaml.dump(current, allow_unicode=True, sort_keys=False))
+                st.success(f"Saved preset: {safe}")
+                st.rerun()
+
+    st.divider()
+
+    # ── Load / delete existing presets ───────────────────────────────────────
+    preset_files = sorted(PRESETS_DIR.glob("*.yaml"))
+    if not preset_files:
+        st.caption("No presets saved yet.")
+    else:
+        st.markdown("**Saved presets**")
+        for pf in preset_files:
+            col_label, col_load, col_del = st.columns([6, 1, 1])
+            col_label.write(pf.stem.replace("_", " "))
+            if col_load.button("Load", key=f"load_{pf.stem}"):
+                try:
+                    data = yaml.safe_load(pf.read_text()) or {}
+                    _save_strategy(data)
+                    st.success(f"Loaded: {pf.stem.replace('_', ' ')}")
+                    st.rerun()
+                except Exception as e:
+                    st.error(str(e))
+            if col_del.button("Delete", key=f"del_{pf.stem}"):
+                pf.unlink()
+                st.rerun()
 
