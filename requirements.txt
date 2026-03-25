@@ -14,3 +14,8 @@ pymupdf4llm
 pdfplumber
 langchain
 langchain-text-splitters
+# Google Drive sync (Phase 9)
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
