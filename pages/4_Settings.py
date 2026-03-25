@@ -5,9 +5,9 @@ from pathlib import Path
 import streamlit as st
 import yaml
 
-st.set_page_config(page_title="Settings — Content Team", page_icon="⚙️", layout="wide")
+st.set_page_config(page_title="Settings — Content Team", layout="wide")
 
-st.title("⚙️ Settings")
+st.title("Settings")
 
 STRATEGY_PATH = Path("config/strategy.yaml")
 
@@ -28,7 +28,7 @@ def _save_strategy(data: dict) -> None:
 
 # ── tabs ──────────────────────────────────────────────────────────────────────
 
-tab_strategy, tab_keys, tab_presets = st.tabs(["⚙️ Strategy", "🔑 System & Keys", "📁 Presets"])
+tab_strategy, tab_keys, tab_presets = st.tabs(["Strategy", "System & Keys", "Presets"])
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1 — Strategy
@@ -98,7 +98,7 @@ with tab_strategy:
             help="The more samples you provide, the more accurately the AI writes in your voice.",
         )
 
-        submitted = st.form_submit_button("💾 Save Strategy", type="primary")
+        submitted = st.form_submit_button("Save Strategy", type="primary")
 
     if submitted:
         if not target_audience.strip() or not voice_tone.strip() or not post_structure.strip():
@@ -119,12 +119,88 @@ with tab_strategy:
             st.rerun()
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 2 — System & Keys  (API health panel — coming next)
+# TAB 2 — System & Keys
 # ══════════════════════════════════════════════════════════════════════════════
 
 with tab_keys:
-    st.subheader("System & API Keys")
-    st.info("API health panel coming next.", icon="🔧")
+    st.subheader("API Key Health")
+    st.caption("Click 'Check all keys' to run a live ping against each service.")
+
+    from config.settings import settings as _s
+
+    def _check_anthropic() -> tuple[bool, str]:
+        try:
+            import anthropic
+            anthropic.Anthropic(api_key=_s.ANTHROPIC_API_KEY).models.list()
+            return True, "OK"
+        except Exception as e:
+            return False, str(e)[:120]
+
+    def _check_perplexity() -> tuple[bool, str]:
+        try:
+            import httpx
+            r = httpx.post(
+                "https://api.perplexity.ai/chat/completions",
+                headers={"Authorization": f"Bearer {_s.PERPLEXITY_API_KEY}"},
+                json={"model": "sonar", "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1},
+                timeout=10,
+            )
+            r.raise_for_status()
+            return True, "OK"
+        except Exception as e:
+            return False, str(e)[:120]
+
+    def _check_deepseek() -> tuple[bool, str]:
+        try:
+            import httpx
+            r = httpx.post(
+                "https://api.deepseek.com/chat/completions",
+                headers={"Authorization": f"Bearer {_s.DEEPSEEK_API_KEY}"},
+                json={"model": "deepseek-chat", "messages": [{"role": "user", "content": "hi"}], "max_tokens": 1},
+                timeout=10,
+            )
+            r.raise_for_status()
+            return True, "OK"
+        except Exception as e:
+            return False, str(e)[:120]
+
+    def _check_voyage() -> tuple[bool, str]:
+        try:
+            import voyageai
+            voyageai.Client(api_key=_s.VOYAGE_API_KEY).embed(["test"], model="voyage-3.5")
+            return True, "OK"
+        except Exception as e:
+            return False, str(e)[:120]
+
+    _CHECKS = [
+        ("Anthropic (Claude)", "ANTHROPIC_API_KEY", _check_anthropic),
+        ("Perplexity", "PERPLEXITY_API_KEY", _check_perplexity),
+        ("DeepSeek", "DEEPSEEK_API_KEY", _check_deepseek),
+        ("Voyage AI", "VOYAGE_API_KEY", _check_voyage),
+    ]
+
+    if "api_health" not in st.session_state:
+        st.session_state.api_health = {}
+
+    if st.button("Check all keys", type="primary"):
+        with st.spinner("Testing connections..."):
+            for name, _key, fn in _CHECKS:
+                st.session_state.api_health[name] = fn()
+
+    if st.session_state.api_health:
+        st.divider()
+        for name, env_key, _ in _CHECKS:
+            result = st.session_state.api_health.get(name)
+            if result is None:
+                continue
+            ok, msg = result
+            col_icon, col_name, col_msg = st.columns([1, 3, 8])
+            col_icon.write("OK" if ok else "FAIL")
+            col_name.write(name)
+            if not ok:
+                col_msg.error(msg)
+    else:
+        st.caption("No results yet — press 'Check all keys' above.")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 3 — Presets  (save/load named strategy configs — coming next)
@@ -132,5 +208,5 @@ with tab_keys:
 
 with tab_presets:
     st.subheader("Strategy Presets")
-    st.info("Save & load named strategy presets — coming next.", icon="📁")
+    st.info("Save & load named strategy presets — coming next.")
 
