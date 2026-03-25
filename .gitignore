@@ -49,3 +49,9 @@ logs/
 # Google Drive credentials — contains OAuth secrets, never commit
 config/gdrive_credentials.json
 config/gdrive_token.json
+
+# Internal planning & Copilot context docs — keep private
+COPILOT_CONTEXT.md
+TASK.md
+PRD.md
+TECH_SPEC.md
