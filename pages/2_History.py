@@ -2,13 +2,32 @@ from __future__ import annotations
 
 import streamlit as st
 
+from db.gdrive_sync import export_all_approved_to_drive, export_post_to_drive, is_gdrive_enabled
 from db.queries import delete_post, get_posts, update_post_status
 
 st.set_page_config(page_title="History — Content Team", page_icon="📋", layout="wide")
 
 st.title("📋 History")
 
-# ── status tabs ───────────────────────────────────────────────────────────────
+# ── Google Drive bulk export ──────────────────────────────────────────────────
+
+if is_gdrive_enabled():
+    with st.container():
+        col_drive, col_info = st.columns([2, 8])
+        with col_drive:
+            if st.button("☁️ Export all to Drive", type="secondary"):
+                with st.spinner("Uploading to Google Drive…"):
+                    try:
+                        result = export_all_approved_to_drive()
+                        st.success(f"Exported {result['exported']} post(s) to Drive.")
+                        if result["errors"]:
+                            for err in result["errors"]:
+                                st.warning(err)
+                    except Exception as exc:  # noqa: BLE001
+                        st.error(f"Drive export failed: {exc}")
+        with col_info:
+            st.caption("Exports all approved / edited / published posts as .txt files to your configured Drive folder.")
+    st.divider()
 
 tab_all, tab_approved, tab_edited, tab_published = st.tabs(
     ["All", "Approved", "Edited", "Published"]
@@ -49,7 +68,7 @@ def _render_posts(filter_status: str | None) -> None:
                 key=f"hist_edit_{post.id}",
             )
 
-            col_save, col_pub, col_copy, col_del, _ = st.columns([1, 1, 1, 1, 4])
+            col_save, col_pub, col_copy, col_del, col_drive, _ = st.columns([1, 1, 1, 1, 1, 3])
 
             # Save edits
             if col_save.button("💾 Save edits", key=f"save_{post.id}"):
@@ -79,6 +98,16 @@ def _render_posts(filter_status: str | None) -> None:
                 delete_post(post.id)
                 st.warning("Post deleted.")
                 st.rerun()
+
+            # Export to Drive (only shown when Drive is enabled)
+            if is_gdrive_enabled():
+                if col_drive.button("☁️ Drive", key=f"drive_{post.id}"):
+                    with st.spinner("Uploading…"):
+                        try:
+                            url = export_post_to_drive(post.id)
+                            st.success(f"Uploaded. [Open in Drive]({url})")
+                        except Exception as exc:  # noqa: BLE001
+                            st.error(f"Upload failed: {exc}")
 
             st.caption(f"Post ID: {post.id} · Run: {post.run_id or '—'}")
 
