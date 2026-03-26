@@ -16,9 +16,9 @@ You pick a topic. Five AI agents handle everything else:
 | 3 | Content Writer | Claude Sonnet | Write post in your voice |
 | 4 | Optimiser | Claude Sonnet | Sharpen the hook, improve readability |
 
-You then review the draft in a local Streamlit UI and approve or discard it.
+You then review the draft in a local Streamlit UI — approve, edit, or discard.
 
-There's also a **Topic Suggestion** system that uses Claude Sonnet to generate 10 fresh topic ideas on demand, saved to a queue so you never run out.
+There's also a **Topic Suggestion** system (Claude Sonnet) that generates 10 fresh ideas on demand, saved to a queue so you never run out.
 
 ---
 
@@ -36,7 +36,7 @@ There's also a **Topic Suggestion** system that uses Claude Sonnet to generate 1
 | App DB | SQLite |
 | PDF extraction | pymupdf4llm → pdfplumber fallback |
 | HTML scraping | BeautifulSoup + requests |
-| Config | python-dotenv + PyYAML |
+| Config | pydantic-settings + PyYAML |
 
 ---
 
@@ -49,10 +49,10 @@ content-agent/
 ├── agents/                 # One agent per file
 ├── pipeline/               # CrewAI crew + model router
 ├── rag/                    # Embedder, ChromaDB client, fetcher, ingestor
-├── db/                     # SQLite models, queries
+├── db/                     # SQLite models, queries, Google Drive sync
 ├── prompts/                # All LLM prompts as .txt files
 ├── config/                 # Settings (pydantic) + strategy.yaml
-├── scripts/                # Utility scripts (e.g. bulk URL ingestion)
+├── scripts/                # Utility scripts (bulk URL ingestion)
 ├── data/                   # Local DB + ChromaDB (gitignored)
 └── logs/                   # Run logs (gitignored)
 ```
@@ -60,6 +60,11 @@ content-agent/
 ---
 
 ## Setup
+
+### Prerequisites
+
+- Python 3.12 (3.13+ not fully supported by all dependencies)
+- API keys for Anthropic, Perplexity, DeepSeek, and Voyage AI (see below)
 
 ### 1. Clone the repo
 
@@ -70,8 +75,6 @@ cd content-team
 
 ### 2. Create a virtual environment
 
-> **Requires Python 3.12.** Python 3.14+ is not yet fully supported by all dependencies (e.g. `tiktoken`).
-
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate        # Mac/Linux
@@ -81,7 +84,8 @@ source .venv/bin/activate        # Mac/Linux
 ### 3. Install dependencies
 
 ```bash
-pip install -r requirements.txt
+make install
+# or: pip install -r requirements.txt
 ```
 
 ### 4. Configure environment variables
@@ -90,19 +94,20 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Then fill in your four API keys in `.env`:
+Fill in your four API keys in `.env`:
 
 ```
-ANTHROPIC_API_KEY=...
-PERPLEXITY_API_KEY=...
-DEEPSEEK_API_KEY=...
-VOYAGE_API_KEY=...
+ANTHROPIC_API_KEY=sk-ant-...
+PERPLEXITY_API_KEY=pplx-...
+DEEPSEEK_API_KEY=sk-...
+VOYAGE_API_KEY=pa-...
 ```
 
 ### 5. Run the app
 
 ```bash
-streamlit run app.py
+make run
+# or: streamlit run app.py
 ```
 
 Open [http://localhost:8501](http://localhost:8501) in your browser.
@@ -116,9 +121,58 @@ Open [http://localhost:8501](http://localhost:8501) in your browser.
 | `ANTHROPIC_API_KEY` | [anthropic.com](https://anthropic.com) | Agents 1, 3, 4 + Topic Agent |
 | `PERPLEXITY_API_KEY` | [perplexity.ai](https://perplexity.ai) | Agent 0 (Web Researcher) |
 | `DEEPSEEK_API_KEY` | [deepseek.com](https://deepseek.com) | Agent 2 (Fact Checker) |
-| `VOYAGE_API_KEY` | [voyageai.com](https://voyageai.com) | Embeddings |
+| `VOYAGE_API_KEY` | [voyageai.com](https://voyageai.com) | Embeddings (Voyage AI) |
 
 API keys are **never** hardcoded. They are loaded exclusively from `.env` via `config/settings.py`.
+
+---
+
+## Knowledge Base (Optional)
+
+You can pre-seed ChromaDB with your own articles, blog posts, and PDFs before running the pipeline. The researcher will automatically retrieve relevant chunks to ground its output.
+
+```bash
+# Add URLs (one per line) to data/urls_to_ingest.txt, then:
+make ingest
+
+# Or with options:
+python scripts/ingest_urls.py --category research --dry-run
+```
+
+PDFs are ingested via the **Knowledge Base** page in the UI (drag-and-drop upload).
+
+---
+
+## Google Drive Sync (Optional)
+
+Approved posts can be automatically exported to a Google Drive folder as `.txt` files. To enable:
+
+1. Create a Google Cloud project and enable the **Google Drive API**
+2. Create an **OAuth 2.0 Desktop App** credential → download the JSON → save as `config/gdrive_credentials.json`
+3. Create a Drive folder and copy its ID from the URL
+4. Add to `.env`:
+   ```
+   GDRIVE_ENABLED=true
+   GDRIVE_FOLDER_ID=<your-folder-id>
+   ```
+5. On first sync, a browser window opens for OAuth consent — the token is saved automatically to `config/gdrive_token.json`
+
+Both `config/gdrive_credentials.json` and `config/gdrive_token.json` are gitignored and will never be committed.
+
+---
+
+## Approximate Running Costs
+
+Each post generation run makes calls to three paid APIs:
+
+| API | Model | Typical cost per run |
+|-----|-------|----------------------|
+| Perplexity | sonar-deep-research | ~$0.005 |
+| Anthropic | Claude Sonnet | ~$0.01–0.03 |
+| DeepSeek | deepseek-chat | ~$0.001 |
+
+**Voyage AI** offers 200M free embedding tokens — more than enough for normal use.  
+Total: roughly **$0.02–0.05 per post** at current API pricing.
 
 ---
 
@@ -131,15 +185,7 @@ Topics focus on: ATS systems, resume strategies, local networking, and visa/work
 
 ---
 
-## Development Notes
-
-- See [COPILOT_CONTEXT.md](COPILOT_CONTEXT.md) for the full coding rules and architecture decisions.
-- See [TECH_SPEC.md](TECH_SPEC.md) for the complete technical specification.
-- See [PRD.md](PRD.md) for the product requirements document.
-- See [TASK.md](TASK.md) for the phased build plan.
-
----
-
 ## License
 
 Private — all rights reserved.
+
