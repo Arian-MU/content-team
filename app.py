@@ -3,6 +3,11 @@ from pathlib import Path
 import streamlit as st
 import yaml
 
+from db.database import init_db
+
+# Ensure all SQLite tables exist on every startup (no-op if already created)
+init_db()
+
 st.set_page_config(
     page_title="Content Team",
     page_icon="✍️",
