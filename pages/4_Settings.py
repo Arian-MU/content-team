@@ -23,6 +23,8 @@ def _load_strategy() -> dict:
 
 
 def _save_strategy(data: dict) -> None:
+    import datetime
+    data["_saved_at"] = datetime.datetime.now().strftime("%d %b %Y, %H:%M")
     STRATEGY_PATH.write_text(yaml.dump(data, allow_unicode=True, sort_keys=False))
 
 
@@ -38,7 +40,11 @@ with tab_strategy:
     cfg = _load_strategy()
 
     st.subheader("Content Strategy")
-    st.caption("These settings are injected into every agent prompt.")
+    _saved_at = cfg.get("_saved_at")
+    if _saved_at:
+        st.caption(f"These settings are injected into every agent prompt.  |  Last saved: {_saved_at}")
+    else:
+        st.caption("These settings are injected into every agent prompt.")
 
     with st.form("strategy_form"):
         target_audience = st.text_area(
@@ -113,6 +119,7 @@ with tab_strategy:
                 "hashtag_strategy":  hashtag_strategy.strip(),
                 "max_post_length":   int(max_post_length),
                 "sample_posts":      [s.strip() for s in sample_posts_raw.splitlines() if s.strip()],
+                # preserve existing timestamp key so _save_strategy can overwrite it
             }
             _save_strategy(new_cfg)
             st.success("Strategy saved! You can now generate content.")
