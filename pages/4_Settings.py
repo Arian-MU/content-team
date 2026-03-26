@@ -201,11 +201,10 @@ with tab_keys:
             if result is None:
                 continue
             ok, msg = result
-            col_icon, col_name, col_msg = st.columns([1, 3, 8])
-            col_icon.write("OK" if ok else "FAIL")
-            col_name.write(name)
-            if not ok:
-                col_msg.error(msg)
+            if ok:
+                st.success(name)
+            else:
+                st.error(f"{name} — {msg}")
     else:
         st.caption("No results yet — press 'Check all keys' above.")
 
