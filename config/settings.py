@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = Field(default="INFO")
     MAX_RETRIES: int = Field(default=1)
 
+    # Test mode — swaps all models to cheapest equivalents to minimise API spend
+    TEST_MODE: bool = Field(default=False)
+
 
 # Singleton instance — import this everywhere
 settings = Settings()

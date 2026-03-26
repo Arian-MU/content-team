@@ -30,7 +30,11 @@ def query(
     category: str | None = None,
 ) -> list[dict]:
     collection = get_collection()
-    query_embedding = embed_single(text)
+    try:
+        query_embedding = embed_single(text)
+    except Exception as exc:  # e.g. VoyageAI RateLimitError on free tier
+        print(f"[chromadb_client] RAG query skipped ({type(exc).__name__}): {exc}")
+        return []
     where = {"category": category} if category else None
 
     results = collection.query(
@@ -75,4 +79,37 @@ def document_exists(content_hash: str) -> bool:
         include=[],
     )
     return len(result["ids"]) > 0
+
+
+def get_sources(category: str | None = None) -> list[dict]:
+    """Return deduplicated source entries from the collection.
+
+    One dict per unique source_url, sorted newest-first by ingested_at.
+    Each dict contains: title, source_url, category, ingested_by, ingested_at, run_id.
+    """
+    collection = get_collection()
+    where = {"category": category} if category else None
+    try:
+        result = collection.get(where=where, include=["metadatas"])
+    except Exception:
+        return []
+
+    seen: set[str] = set()
+    sources: list[dict] = []
+    for meta in result["metadatas"]:
+        url = meta.get("source_url", "")
+        if not url or url in seen:
+            continue
+        seen.add(url)
+        sources.append({
+            "title":       meta.get("title", url),
+            "source_url":  url,
+            "category":    meta.get("category", ""),
+            "ingested_by": meta.get("ingested_by", ""),
+            "ingested_at": meta.get("ingested_at", "")[:19].replace("T", " ") if meta.get("ingested_at") else "",
+            "run_id":      meta.get("run_id", ""),
+        })
+
+    sources.sort(key=lambda s: s["ingested_at"], reverse=True)
+    return sources
 

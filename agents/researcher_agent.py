@@ -22,14 +22,19 @@ _AUDIENCE_HINT = (
 )
 
 # Perplexity sonar-deep-research pricing (USD per token)
-_COST_PER_INPUT_TOKEN  = 5.0  / 1_000_000   # $5  / 1M input tokens
-_COST_PER_OUTPUT_TOKEN = 15.0 / 1_000_000   # $15 / 1M output tokens
+# Perplexity pricing (USD per token)
+_COST_RATES = {
+    "sonar-deep-research": (5.0 / 1_000_000, 15.0 / 1_000_000),  # $5/$15 per 1M
+    "sonar":               (1.0 / 1_000_000,  1.0 / 1_000_000),  # $1/$1  per 1M
+}
+_COST_FALLBACK = _COST_RATES["sonar-deep-research"]
 
 
-def _estimate_cost(tokens_in: int | None, tokens_out: int | None) -> float | None:
+def _estimate_cost(tokens_in: int | None, tokens_out: int | None, model: str) -> float | None:
     if tokens_in is None or tokens_out is None:
         return None
-    return round(tokens_in * _COST_PER_INPUT_TOKEN + tokens_out * _COST_PER_OUTPUT_TOKEN, 6)
+    rate_in, rate_out = _COST_RATES.get(model, _COST_FALLBACK)
+    return round(tokens_in * rate_in + tokens_out * rate_out, 6)
 
 
 def run(topic: str, run_id: str) -> dict:
@@ -104,6 +109,7 @@ def run(topic: str, run_id: str) -> dict:
     cost_usd = _estimate_cost(
         getattr(response.usage, "prompt_tokens", None),
         getattr(response.usage, "completion_tokens", None),
+        model,
     )
 
     save_research_output(

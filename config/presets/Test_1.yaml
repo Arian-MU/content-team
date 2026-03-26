@@ -6,12 +6,7 @@ content_pillars:
 - local Australian networking
 - job search tactics for the Australian market
 - tech industry entry points
-topics_to_avoid:
-- visa
-- visa sponsorship
-- work visa
-- immigration
-- skilled migration
+topics_to_avoid: []
 post_structure: Hook -> Observation -> Insight -> Takeaway -> CTA -> Hashtags
 hashtag_strategy: '3-5 hashtags, mix broad (#jobsearch #australia) and niche (#internationaltechstudents)'
 max_post_length: 250

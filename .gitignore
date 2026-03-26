@@ -1,25 +1,15 @@
-# Environment & secrets — NEVER commit API keys
+# Secrets
 .env
 .env.local
-.env.*.local
 
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
-*.egg-info/
-dist/
-build/
-.eggs/
-*.egg
 
-# Virtual environments
+# Virtual environment
 .venv/
-venv/
-env/
-ENV/
 
-# Data — local databases and vector store (large, user-specific)
+# Local data (large / user-specific)
 data/chromadb/
 data/content_agent.db
 data/content_agent.db-shm
@@ -31,27 +21,21 @@ logs/
 
 # macOS
 .DS_Store
-.AppleDouble
-.LSOverride
 
 # IDE
 .idea/
 .vscode/
-*.swp
-*.swo
 
-# Jupyter
-.ipynb_checkpoints/
-
-# Streamlit
+# Streamlit secrets
 .streamlit/secrets.toml
 
-# Google Drive credentials — contains OAuth secrets, never commit
+# Google Drive OAuth tokens
 config/gdrive_credentials.json
 config/gdrive_token.json
 
-# Internal planning & Copilot context docs — keep private
+# Private planning docs
 COPILOT_CONTEXT.md
 TASK.md
 PRD.md
 TECH_SPEC.md
+deep-research-report*.md

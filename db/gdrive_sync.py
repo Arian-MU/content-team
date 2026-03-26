@@ -75,6 +75,13 @@ def _get_service():
     return build("drive", "v3", credentials=creds)
 
 
+def authenticate_drive() -> None:
+    """Trigger the OAuth flow (opens browser on first run) and confirm connection."""
+    service = _get_service()
+    about = service.files().list(pageSize=1, fields="files(id)").execute()
+    print("Google Drive connected. Ready to sync.")
+
+
 def _slugify(text: str, max_len: int = 50) -> str:
     """Convert a string to a safe filename fragment."""
     slug = re.sub(r"[^\w\s-]", "", text.lower())

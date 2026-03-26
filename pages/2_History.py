@@ -48,16 +48,20 @@ _STATUS_BADGE = {
 }
 
 
-def _render_posts(filter_status: str | None) -> None:
+def _render_posts(filter_status: str | None, tab: str) -> None:
+    """Render posts for a given status filter.
+
+    `tab` is a short unique string used as a key prefix so widgets
+    across tabs never share the same Streamlit element key.
+    """
     posts = get_posts(status=filter_status)
     if not posts:
         st.info("No posts found.")
         return
 
     for post in posts:
-        date_str  = post.created_at[:10] if post.created_at else "—"
-        badge     = _STATUS_BADGE.get(post.status, post.status)
-        preview   = (post.content_en[:100] + "…") if len(post.content_en) > 100 else post.content_en
+        date_str = post.created_at[:10] if post.created_at else "—"
+        badge    = _STATUS_BADGE.get(post.status, post.status)
 
         with st.expander(f"**{date_str}** · {post.topic[:60]} · {badge}", expanded=False):
             # Full editable post content
@@ -65,13 +69,13 @@ def _render_posts(filter_status: str | None) -> None:
                 "Post content",
                 value=post.content_en,
                 height=260,
-                key=f"hist_edit_{post.id}",
+                key=f"{tab}_edit_{post.id}",
             )
 
             col_save, col_pub, col_copy, col_del, col_drive, _ = st.columns([1, 1, 1, 1, 1, 3])
 
             # Save edits
-            if col_save.button("💾 Save edits", key=f"save_{post.id}"):
+            if col_save.button("💾 Save edits", key=f"{tab}_save_{post.id}"):
                 import db.database as _db
                 with _db.get_connection() as _conn:
                     new_status = "edited" if post.status not in ("published",) else post.status
@@ -84,24 +88,24 @@ def _render_posts(filter_status: str | None) -> None:
                 st.rerun()
 
             # Mark published
-            if col_pub.button("🚀 Publish", key=f"pub_{post.id}", disabled=post.status == "published"):
+            if col_pub.button("🚀 Publish", key=f"{tab}_pub_{post.id}", disabled=post.status == "published"):
                 update_post_status(post.id, "published")
                 st.success("Marked as published.")
                 st.rerun()
 
             # Copy helper
-            if col_copy.button("📋 Copy", key=f"copy_{post.id}"):
+            if col_copy.button("📋 Copy", key=f"{tab}_copy_{post.id}"):
                 st.code(post.content_en, language=None)
 
             # Delete
-            if col_del.button("🗑️ Delete", key=f"del_{post.id}"):
+            if col_del.button("🗑️ Delete", key=f"{tab}_del_{post.id}"):
                 delete_post(post.id)
                 st.warning("Post deleted.")
                 st.rerun()
 
             # Export to Drive (only shown when Drive is enabled)
             if is_gdrive_enabled():
-                if col_drive.button("☁️ Drive", key=f"drive_{post.id}"):
+                if col_drive.button("☁️ Drive", key=f"{tab}_drive_{post.id}"):
                     with st.spinner("Uploading…"):
                         try:
                             url = export_post_to_drive(post.id)
@@ -113,14 +117,14 @@ def _render_posts(filter_status: str | None) -> None:
 
 
 with tab_all:
-    _render_posts(None)
+    _render_posts(None, "all")
 
 with tab_approved:
-    _render_posts("approved")
+    _render_posts("approved", "approved")
 
 with tab_edited:
-    _render_posts("edited")
+    _render_posts("edited", "edited")
 
 with tab_published:
-    _render_posts("published")
+    _render_posts("published", "published")
 

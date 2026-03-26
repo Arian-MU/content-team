@@ -45,7 +45,11 @@ def ingest_url(
         return False
 
     # ── Embed all chunks in one batch call ───────────────────────────────────
-    embeddings = embedder.embed(chunks)
+    try:
+        embeddings = embedder.embed(chunks)
+    except Exception as exc:  # e.g. VoyageAI RateLimitError on free tier
+        print(f"[ingestor] Embedding skipped ({type(exc).__name__}): {exc}")
+        return False
 
     # ── Build metadata ───────────────────────────────────────────────────────
     ingested_at = datetime.now(timezone.utc).isoformat()

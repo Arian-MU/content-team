@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import yaml
 from datetime import date
 from pathlib import Path
 
@@ -9,9 +10,19 @@ import anthropic
 from config.settings import settings
 from db.queries import get_posts, save_run_log
 from pipeline.router import get_model
+from rag.trend_fetcher import fetch_trends, format_for_prompt
 
 _PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "topic_agent.txt"
 _STRATEGY_PATH = Path(__file__).parent.parent / "config" / "strategy.yaml"
+
+# Fixed seed keywords derived from the strategy content pillars.
+# These are sent to Google Autocomplete + Trends every time topics are generated.
+_TREND_SEEDS = [
+    "australia resume",
+    "ATS resume tips",
+    "job search australia international student",
+    "linkedin profile tips australia",
+]
 
 
 def _load_strategy() -> str:
@@ -23,6 +34,25 @@ def _load_post_history() -> str:
     if not posts:
         return "No previous posts yet."
     return "\n".join(f"- {p.topic}" for p in posts[:30])
+
+
+def _load_topics_to_avoid() -> str:
+    """Return a comma-separated list of banned topics from strategy.yaml."""
+    raw = yaml.safe_load(_STRATEGY_PATH.read_text()) or {}
+    items = raw.get("topics_to_avoid") or []
+    if not items:
+        return "None specified."
+    return ", ".join(str(i) for i in items)
+
+
+def _load_trending_searches() -> str:
+    """Fetch real-time search demand data. Returns empty-safe string on any failure."""
+    try:
+        results = fetch_trends(_TREND_SEEDS, geo="AU")
+        return format_for_prompt(results)
+    except Exception as exc:
+        print(f"[topic_agent] trend fetch failed (continuing without): {exc}")
+        return "Trend data unavailable — generate topics from strategy context only."
 
 
 def run(run_id: str) -> list[str]:
@@ -37,7 +67,9 @@ def run(run_id: str) -> list[str]:
         template
         .replace("{strategy}", _load_strategy())
         .replace("{post_history}", _load_post_history())
+        .replace("{trending_searches}", _load_trending_searches())
         .replace("{current_date}", date.today().isoformat())
+        .replace("{topics_to_avoid}", _load_topics_to_avoid())
     )
 
     model = get_model("topic_agent")
