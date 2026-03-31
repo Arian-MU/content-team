@@ -1,0 +1,12 @@
+# Gitleaks configuration
+# https://github.com/gitleaks/gitleaks
+
+title = "Content Team Gitleaks Config"
+
+[extend]
+# Use the default gitleaks ruleset
+useDefault = true
+
+[allowlist]
+description = "Ignore placeholder values in .env.example"
+paths = ['''\.env\.example''']
