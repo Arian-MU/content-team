@@ -1,0 +1,4 @@
+# CODEOWNERS — every file in this repository is owned by @Arian-MU.
+# All pull requests require explicit approval from the repository owner
+# before they can be merged. Unsolicited contributions are not accepted.
+* @Arian-MU
